@@ -92,7 +92,10 @@ body {
   width: 100%;
   height: 100%;
   display: block;
-  touch-action: none;
+  /* Allow vertical page scrolling on mobile. The JS in
+     engine/Input.js calls preventDefault() only when a touch starts on
+     a draggable body, so dragging still works. */
+  touch-action: pan-y;
 }
 
 .scene__overlay {
