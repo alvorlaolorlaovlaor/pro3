@@ -1,0 +1,300 @@
+:root {
+  --paper: #F4EFE6;
+  --ink: #1B1B1F;
+  --ink-soft: #1B1B1F99;
+  --accent-warm: #FF5A3C;
+  --accent-cool: #3CC8FF;
+  --accent-sun: #FFD23C;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+body {
+  min-height: 100vh;
+  cursor: default;
+}
+
+/* ---------- top bar ---------- */
+.topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.1rem 1.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  color: var(--paper);
+}
+
+.topbar__brand {
+  font-weight: 500;
+}
+
+.topbar__mute {
+  pointer-events: auto;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.topbar__mute:hover {
+  background: var(--paper);
+  color: var(--ink);
+  mix-blend-mode: normal;
+}
+
+/* ---------- scenes ---------- */
+#scenes {
+  position: relative;
+}
+
+.scene {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--paper);
+  border-bottom: 1px solid #1b1b1f10;
+}
+
+.scene__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+.scene__overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2rem 2.2rem 2.4rem;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  z-index: 2;
+  mix-blend-mode: difference;
+  color: var(--paper);
+}
+
+.scene__kicker {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.scene__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.6rem, 9vw, 8rem);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  text-transform: lowercase;
+}
+
+.scene__caption {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  max-width: 36ch;
+  opacity: 0.85;
+}
+
+/* Title scene hides the static title — letters fall in instead */
+[data-scene="title"] .scene__title {
+  opacity: 0;
+}
+
+.scene__reset {
+  position: absolute;
+  top: 1.1rem;
+  right: 50%;
+  transform: translateX(50%);
+  z-index: 5;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.25s, background 0.15s, color 0.15s;
+  pointer-events: none;
+}
+
+.scene.is-active .scene__reset {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.scene__reset:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.scene__go {
+  pointer-events: auto;
+  margin-top: 1rem;
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--accent-warm);
+  color: var(--paper);
+  border: none;
+  padding: 0.7rem 1.4rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.scene__go:hover { transform: scale(1.04); }
+.scene__go:active { transform: scale(0.97); }
+.scene__go.is-spent { opacity: 0.4; pointer-events: none; }
+
+/* ---------- per-scene cursor & tint ---------- */
+[data-scene="title"] .scene__canvas { cursor: grab; }
+[data-scene="title"] .scene__canvas:active { cursor: grabbing; }
+[data-scene="pendulum"] .scene__canvas { cursor: crosshair; }
+[data-scene="magnet"] .scene__canvas { cursor: cell; }
+[data-scene="slingshot"] .scene__canvas { cursor: grab; }
+[data-scene="slingshot"] .scene__canvas:active { cursor: grabbing; }
+[data-scene="goldberg"] .scene__canvas { cursor: copy; }
+
+/* ---------- endcap ---------- */
+.endcap {
+  min-height: 30vh;
+  padding: 3rem 2.2rem 5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  justify-content: center;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
+
+.endcap__hint {
+  opacity: 0.6;
+}
+
+/* ---------- loader ---------- */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.6s ease, visibility 0.6s;
+}
+
+.loader canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.loader__hint {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--paper);
+  padding: 0.7rem 1.2rem;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.loader.is-gone {
+  opacity: 0;
+  visibility: hidden;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ---------- scroll hint ---------- */
+.scrollhint {
+  position: fixed;
+  bottom: 1.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+  mix-blend-mode: difference;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.scrollhint.is-visible { opacity: 0.7; }
+.scrollhint svg { animation: nudge 1.8s ease-in-out infinite; }
+
+@keyframes nudge {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(4px); opacity: 0.3; }
+}
+
+@media (max-width: 520px) {
+  .scene__overlay { padding: 1.4rem 1.4rem 1.8rem; }
+  .topbar { padding: 0.8rem 1rem; }
+}

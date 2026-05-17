@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#F4EFE6" />
+    <title>Playground — an interactive physics toy box</title>
+    <meta name="description" content="A scrollable physics playground. Drop letters, pluck pendulums, bend magnetic fields, fire slingshots, watch chain reactions." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="./src/style.css" />
+
+    <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tone@15.0.4/build/Tone.js"></script>
+  </head>
+  <body>
+    <div id="loader" class="loader" aria-hidden="true">
+      <canvas data-loader-canvas></canvas>
+      <p class="loader__hint">tap anywhere to enter</p>
+    </div>
+
+    <header class="topbar">
+      <span class="topbar__brand">playground</span>
+      <button class="topbar__mute" data-mute aria-label="Toggle sound">
+        <span data-mute-on>sound on</span>
+        <span data-mute-off hidden>sound off</span>
+      </button>
+    </header>
+
+    <main id="scenes">
+      <section class="scene" data-scene="title" data-scene-number="01">
+        <canvas class="scene__canvas" data-canvas></canvas>
+        <div class="scene__overlay">
+          <p class="scene__kicker">01 — drag, throw, stack</p>
+          <h1 class="scene__title">playground</h1>
+          <p class="scene__caption">a physics toy box. five scenes. one cursor.</p>
+        </div>
+        <button class="scene__reset" data-reset>reset</button>
+      </section>
+
+      <section class="scene" data-scene="pendulum" data-scene-number="02">
+        <canvas class="scene__canvas" data-canvas></canvas>
+        <div class="scene__overlay">
+          <p class="scene__kicker">02 — pluck the strings</p>
+          <h2 class="scene__title">orchestra</h2>
+          <p class="scene__caption">longer ropes, deeper notes. the math you slept through, but pretty.</p>
+        </div>
+        <button class="scene__reset" data-reset>reset</button>
+      </section>
+
+      <section class="scene" data-scene="magnet" data-scene-number="03">
+        <canvas class="scene__canvas" data-canvas></canvas>
+        <div class="scene__overlay">
+          <p class="scene__kicker">03 — click to flip polarity</p>
+          <h2 class="scene__title">magnet</h2>
+          <p class="scene__caption">opposites attract. mostly.</p>
+        </div>
+        <button class="scene__reset" data-reset>reset</button>
+      </section>
+
+      <section class="scene" data-scene="slingshot" data-scene-number="04">
+        <canvas class="scene__canvas" data-canvas></canvas>
+        <div class="scene__overlay">
+          <p class="scene__kicker">04 — pull back, let go</p>
+          <h2 class="scene__title">slingshot</h2>
+          <p class="scene__caption">aim is optional. catharsis is not.</p>
+        </div>
+        <button class="scene__reset" data-reset>reset</button>
+      </section>
+
+      <section class="scene scene--finale" data-scene="goldberg" data-scene-number="05">
+        <canvas class="scene__canvas" data-canvas></canvas>
+        <div class="scene__overlay">
+          <p class="scene__kicker">05 — drop pieces, hit go</p>
+          <h2 class="scene__title">chain reaction</h2>
+          <p class="scene__caption">arrange the dominos. ring the bell.</p>
+          <button class="scene__go" data-go>go</button>
+        </div>
+        <button class="scene__reset" data-reset>reset</button>
+      </section>
+
+      <footer class="endcap">
+        <p>made with matter.js, gsap, tone.js.</p>
+        <p class="endcap__hint">↑ scroll back. try the konami code.</p>
+      </footer>
+    </main>
+
+    <div class="scrollhint" data-scrollhint aria-hidden="true">
+      <span>scroll</span>
+      <svg viewBox="0 0 12 24" width="12" height="24" aria-hidden="true">
+        <path d="M6 2 v18 M2 16 l4 4 l4 -4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
