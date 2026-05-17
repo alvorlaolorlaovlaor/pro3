@@ -14,6 +14,12 @@ export class TitleDrop extends Scene {
     this.mouseBits = null;
   }
 
+  resetLocalState() {
+    this.letters = [];
+    this.walls = [];
+    this.mouseBits = null;
+  }
+
   setup() {
     const { w, h } = this.renderer;
     this.engine.gravity.y = 1;
@@ -84,12 +90,11 @@ export class TitleDrop extends Scene {
   }
 
   onResize() {
+    Matter.Events.off(this.engine);
     Matter.World.clear(this.world, false);
-    this.letters = [];
-    this.walls = [];
-    this._buildWalls(this.renderer.w, this.renderer.h);
-    this._buildLetters(this.renderer.w, this.renderer.h);
-    if (this.mouseBits) Matter.World.add(this.world, this.mouseBits.constraint);
+    this.resetLocalState();
+    this.initialized = false;
+    this._ensureInitialized();
   }
 
   draw() {

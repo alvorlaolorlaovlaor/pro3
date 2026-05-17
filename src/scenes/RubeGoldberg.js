@@ -4,105 +4,127 @@ import { playCollision, playBell, playArpeggio } from "../engine/audio.js";
 
 const Matter = window.Matter;
 
+/**
+ * Layout (left → right):
+ *
+ *   ┌──────────┐
+ *   │ ball  ▌  │    ← tilted starting shelf with a removable lip
+ *   └──────╲───┘
+ *           ╲       ← angled ramp
+ *            ╲
+ *   ━━━━━━━━━━╲━━━━━│ │ │ │ │ │ │ │ ○ ← dominoes then bell
+ *                      ground
+ *
+ * Ball rolls right when the lip is removed → drops onto the ramp →
+ * slides down and onto the ground → bowls through the dominoes → last
+ * domino taps the bell sensor.
+ */
 export class RubeGoldberg extends Scene {
   constructor(section) {
     super(section);
+    this.resetLocalState();
+  }
+
+  resetLocalState() {
     this.ball = null;
+    this.bell = null;
+    this.lip = null;
     this.dominos = [];
     this.userPieces = [];
-    this.platforms = [];
-    this.completed = false;
+    this.statics = [];
     this.confetti = [];
-    this._handlers = null;
     this.placePreview = null;
+    this.completed = false;
   }
 
   setup() {
     const { w, h } = this.renderer;
     this.engine.gravity.y = 1;
-    this.completed = false;
     this._setGoButton(false);
 
-    // Static layout: a chute on the left, a ramp in the middle, a bell on the right.
-    const wallOpts = { isStatic: true, render: { visible: false }, friction: 0.4 };
+    const groundY = h - 50;
+    const wallOpts = { isStatic: true, render: { visible: false }, friction: 0.05 };
 
-    // Outer bounds
-    Matter.World.add(this.world, [
-      Matter.Bodies.rectangle(w / 2, h + 100, w * 2, 200, wallOpts),
-      Matter.Bodies.rectangle(-100, h / 2, 200, h * 2, wallOpts),
-      Matter.Bodies.rectangle(w + 100, h / 2, 200, h * 2, wallOpts),
-    ]);
+    // ── Bounds ──────────────────────────────────────────────────────
+    this._addStatic(Matter.Bodies.rectangle(w / 2, h + 100, w * 2, 200, { ...wallOpts, friction: 0.6 }));
+    this._addStatic(Matter.Bodies.rectangle(-100, h / 2, 200, h * 2, wallOpts));
+    this._addStatic(Matter.Bodies.rectangle(w + 100, h / 2, 200, h * 2, wallOpts));
 
-    // Starting shelf (top-left), holds the ball.
-    const shelfY = h * 0.18;
-    const shelfW = w * 0.32;
-    const shelf = Matter.Bodies.rectangle(shelfW / 2 + 20, shelfY, shelfW, 10, wallOpts);
+    // ── Ground ──────────────────────────────────────────────────────
+    const ground = Matter.Bodies.rectangle(w / 2, groundY + 20, w * 2, 40, { ...wallOpts, friction: 0.4 });
+    ground._color = palette.ink;
+    this._addStatic(ground);
+
+    // ── Starting shelf ──────────────────────────────────────────────
+    // A tilted beam, slightly slanted down-right so the ball rolls
+    // once the lip is gone.
+    const shelfLeft = { x: w * 0.04, y: h * 0.16 };
+    const shelfRight = { x: w * 0.32, y: h * 0.22 };
+    const shelf = this._beam(shelfLeft, shelfRight, 10, { friction: 0.04 });
     shelf._color = palette.ink;
-    this.platforms.push(shelf);
+    this._addStatic(shelf);
 
-    // Lip on the right end of the shelf — removed when "go" is pressed.
-    const lipX = shelfW + 18;
-    this.lip = Matter.Bodies.rectangle(lipX, shelfY - 12, 6, 18, wallOpts);
+    // Lip — vertical stop on the right end. Removed when "go" is hit.
+    this.lip = Matter.Bodies.rectangle(shelfRight.x - 4, shelfRight.y - 18, 8, 26, {
+      ...wallOpts,
+      friction: 0.6,
+    });
     this.lip._color = palette.warm;
-    this.platforms.push(this.lip);
+    Matter.World.add(this.world, this.lip);
+    this.statics.push(this.lip);
 
-    // Diagonal ramp under the shelf, sloping down to the right.
-    const ramp = Matter.Bodies.rectangle(w * 0.5, h * 0.45, w * 0.55, 10, {
-      ...wallOpts,
-      angle: 0.22,
-    });
+    // ── Ramp ────────────────────────────────────────────────────────
+    // Long diagonal connecting the shelf's lower-right area to the
+    // ground a bit before the dominoes.
+    const rampTop = { x: w * 0.20, y: h * 0.34 };
+    const rampBottom = { x: w * 0.42, y: groundY - 4 };
+    const ramp = this._beam(rampTop, rampBottom, 10, { friction: 0.02 });
     ramp._color = palette.ink;
-    this.platforms.push(ramp);
+    this._addStatic(ramp);
 
-    // Catch shelf — left side bumper that redirects to the domino row.
-    const catchShelf = Matter.Bodies.rectangle(w * 0.5, h * 0.72, w * 0.7, 10, {
-      ...wallOpts,
-      angle: -0.05,
-    });
-    catchShelf._color = palette.ink;
-    this.platforms.push(catchShelf);
-
-    Matter.World.add(this.world, this.platforms);
-
-    // Pre-placed dominos along the catch shelf.
-    const domCount = 10;
-    const domStartX = w * 0.25;
-    const domEndX = w * 0.82;
+    // ── Dominoes ────────────────────────────────────────────────────
+    const domCount = 9;
+    const domH = 60;
+    const domW = 10;
+    const firstX = w * 0.50;
+    const lastX = w * 0.86;
+    const spacing = (lastX - firstX) / (domCount - 1);
     for (let i = 0; i < domCount; i++) {
-      const t = i / (domCount - 1);
-      const x = domStartX + (domEndX - domStartX) * t;
-      const y = h * 0.72 - 30 + t * (h * 0.7 - h * 0.72) - 6;
-      const dom = Matter.Bodies.rectangle(x, y, 10, 50, {
-        density: 0.002,
+      const x = firstX + i * spacing;
+      const dom = Matter.Bodies.rectangle(x, groundY - domH / 2, domW, domH, {
+        density: 0.0015,
         friction: 0.5,
-        restitution: 0.05,
+        frictionStatic: 0.6,
+        restitution: 0.02,
+        slop: 0.01,
       });
       dom._color = accents[i % accents.length];
       this.dominos.push(dom);
     }
     Matter.World.add(this.world, this.dominos);
 
-    // The bell — a sensor body at the far right.
-    const bellX = w * 0.88;
-    const bellY = h * 0.72 - 60;
-    this.bell = Matter.Bodies.circle(bellX, bellY, 24, {
+    // ── Bell ────────────────────────────────────────────────────────
+    const bellX = w * 0.93;
+    const bellY = groundY - 28;
+    this.bell = Matter.Bodies.circle(bellX, bellY, 28, {
       isStatic: true,
       isSensor: true,
       render: { visible: false },
     });
-    this.bell._color = palette.sun;
     Matter.World.add(this.world, this.bell);
 
-    // The ball — sits on the starting shelf.
-    this.ball = Matter.Bodies.circle(shelfW * 0.55, shelfY - 18, 16, {
-      density: 0.004,
-      restitution: 0.4,
-      friction: 0.3,
+    // ── Ball ────────────────────────────────────────────────────────
+    const ballR = 14;
+    this.ball = Matter.Bodies.circle(shelfLeft.x + w * 0.05, shelfLeft.y - ballR - 4, ballR, {
+      density: 0.005,
+      restitution: 0.2,
+      friction: 0.02,
+      frictionAir: 0.001,
     });
     this.ball._color = palette.warm;
     Matter.World.add(this.world, this.ball);
 
-    // Collision sounds + bell trigger.
+    // ── Events ──────────────────────────────────────────────────────
     Matter.Events.on(this.engine, "collisionStart", (evt) => {
       for (const pair of evt.pairs) {
         if ((pair.bodyA === this.bell || pair.bodyB === this.bell) && !this.completed) {
@@ -112,27 +134,53 @@ export class RubeGoldberg extends Scene {
           pair.bodyA.velocity.x - pair.bodyB.velocity.x,
           pair.bodyA.velocity.y - pair.bodyB.velocity.y
         );
-        if (v > 2) playCollision(Math.min(1, v / 12));
+        if (v > 1.5) playCollision(Math.min(1, v / 10));
       }
     });
 
     if (!this._handlers) this._bindPlacement();
   }
 
+  // ── Helpers ───────────────────────────────────────────────────────
+  _addStatic(body) {
+    Matter.World.add(this.world, body);
+    this.statics.push(body);
+  }
+
+  /**
+   * Create a static rectangular "beam" between two points with the
+   * given thickness. The body's angle is set so it spans (a → b).
+   */
+  _beam(a, b, thickness, opts = {}) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = Math.hypot(dx, dy);
+    const cx = (a.x + b.x) / 2;
+    const cy = (a.y + b.y) / 2;
+    const angle = Math.atan2(dy, dx);
+    return Matter.Bodies.rectangle(cx, cy, len, thickness, {
+      isStatic: true,
+      angle,
+      render: { visible: false },
+      ...opts,
+    });
+  }
+
   _bindPlacement() {
-    // Click on empty space to place a small extra domino/peg.
+    // Click on empty space to add a small extra peg.
     const place = (e) => {
       const rect = this.canvas.getBoundingClientRect();
       const p = e.touches ? e.touches[0] : e;
       const x = p.clientX - rect.left;
       const y = p.clientY - rect.top;
-      // Don't place if user clicked near the ball or bell.
-      if (Math.hypot(x - this.ball.position.x, y - this.ball.position.y) < 30) return;
-      if (Math.hypot(x - this.bell.position.x, y - this.bell.position.y) < 30) return;
+      // Don't place over the ball or the bell — easy to accidentally trap them.
+      if (this.ball && Math.hypot(x - this.ball.position.x, y - this.ball.position.y) < 36) return;
+      if (this.bell && Math.hypot(x - this.bell.position.x, y - this.bell.position.y) < 40) return;
       const piece = Matter.Bodies.rectangle(x, y, 8, 36, {
-        density: 0.002,
-        friction: 0.4,
-        restitution: 0.1,
+        density: 0.001,
+        friction: 0.5,
+        frictionStatic: 0.6,
+        restitution: 0.05,
       });
       piece._color = palette.cool;
       this.userPieces.push(piece);
@@ -163,7 +211,7 @@ export class RubeGoldberg extends Scene {
   _release() {
     if (!this.lip) return;
     Matter.World.remove(this.world, this.lip);
-    this.platforms = this.platforms.filter((p) => p !== this.lip);
+    this.statics = this.statics.filter((b) => b !== this.lip);
     this.lip = null;
     this._setGoButton(true);
   }
@@ -176,7 +224,6 @@ export class RubeGoldberg extends Scene {
   }
 
   _spawnConfetti() {
-    const { w, h } = this.renderer;
     const bx = this.bell.position.x;
     const by = this.bell.position.y;
     for (let i = 0; i < 80; i++) {
@@ -205,23 +252,12 @@ export class RubeGoldberg extends Scene {
     this.confetti = this.confetti.filter((c) => c.life > 0);
   }
 
-  reset() {
-    this.dominos = [];
-    this.userPieces = [];
-    this.platforms = [];
-    this.confetti = [];
-    this.placePreview = null;
-    super.reset();
-  }
-
   onResize() {
     Matter.Events.off(this.engine);
-    this.dominos = [];
-    this.userPieces = [];
-    this.platforms = [];
-    this.confetti = [];
     Matter.World.clear(this.world, false);
-    this.setup();
+    this.resetLocalState();
+    this.initialized = false;
+    this._ensureInitialized();
   }
 
   draw() {
@@ -229,48 +265,34 @@ export class RubeGoldberg extends Scene {
     ctx.fillStyle = palette.paper;
     ctx.fillRect(0, 0, w, h);
 
-    // Platforms
-    for (const p of this.platforms) {
+    const drawPoly = (b, fill, stroke = palette.ink, lw = 1.5) => {
       ctx.save();
-      ctx.translate(p.position.x, p.position.y);
-      ctx.rotate(p.angle);
-      ctx.fillStyle = p._color || palette.ink;
-      const verts = p.vertices;
-      ctx.beginPath();
-      for (let i = 0; i < verts.length; i++) {
-        const lx = verts[i].x - p.position.x;
-        const ly = verts[i].y - p.position.y;
-        if (i === 0) ctx.moveTo(lx, ly);
-        else ctx.lineTo(lx, ly);
+      ctx.fillStyle = fill;
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lw;
       }
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-    }
-
-    // Dominos + user pieces (same draw routine)
-    const drawRect = (b) => {
-      ctx.save();
-      ctx.translate(b.position.x, b.position.y);
-      ctx.rotate(b.angle);
-      ctx.fillStyle = b._color;
-      ctx.strokeStyle = palette.ink;
-      ctx.lineWidth = 1.5;
       const verts = b.vertices;
       ctx.beginPath();
       for (let i = 0; i < verts.length; i++) {
-        const lx = verts[i].x - b.position.x;
-        const ly = verts[i].y - b.position.y;
-        if (i === 0) ctx.moveTo(lx, ly);
-        else ctx.lineTo(lx, ly);
+        if (i === 0) ctx.moveTo(verts[i].x, verts[i].y);
+        else ctx.lineTo(verts[i].x, verts[i].y);
       }
       ctx.closePath();
       ctx.fill();
-      ctx.stroke();
+      if (stroke) ctx.stroke();
       ctx.restore();
     };
-    this.dominos.forEach(drawRect);
-    this.userPieces.forEach(drawRect);
+
+    // Statics (shelf, ramp, ground, lip)
+    for (const s of this.statics) {
+      if (!s._color) continue;
+      drawPoly(s, s._color, null);
+    }
+
+    // Dominos + user pieces
+    for (const d of this.dominos) drawPoly(d, d._color);
+    for (const p of this.userPieces) drawPoly(p, p._color);
 
     // Bell
     if (this.bell) {
@@ -278,13 +300,12 @@ export class RubeGoldberg extends Scene {
       ctx.strokeStyle = palette.ink;
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(this.bell.position.x, this.bell.position.y, 24, 0, Math.PI * 2);
+      ctx.arc(this.bell.position.x, this.bell.position.y, 28, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-      // tongue
       ctx.fillStyle = palette.ink;
       ctx.beginPath();
-      ctx.arc(this.bell.position.x, this.bell.position.y + 6, 4, 0, Math.PI * 2);
+      ctx.arc(this.bell.position.x, this.bell.position.y + 8, 4, 0, Math.PI * 2);
       ctx.fill();
     }
 

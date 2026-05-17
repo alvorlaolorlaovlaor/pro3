@@ -15,6 +15,11 @@ export class PendulumOrchestra extends Scene {
     this.mouseBits = null;
   }
 
+  resetLocalState() {
+    this.pendulums = [];
+    this.mouseBits = null;
+  }
+
   setup() {
     const { w, h } = this.renderer;
     this.engine.gravity.y = 1;
@@ -69,10 +74,11 @@ export class PendulumOrchestra extends Scene {
   }
 
   onResize() {
+    Matter.Events.off(this.engine);
     Matter.World.clear(this.world, false);
-    this.pendulums = [];
-    this._build(this.renderer.w, this.renderer.h);
-    if (this.mouseBits) Matter.World.add(this.world, this.mouseBits.constraint);
+    this.resetLocalState();
+    this.initialized = false;
+    this._ensureInitialized();
   }
 
   draw() {

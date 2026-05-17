@@ -34,11 +34,12 @@ export class Scene {
   }
 
   // Subclasses implement these:
-  setup() {}
+  setup() {}                  // build the world; called once per init
   draw() {}
   onResize() {}
   onEnter() {}
   onExit() {}
+  resetLocalState() {}        // clear arrays/flags before a fresh setup()
 
   _ensureInitialized() {
     if (this.initialized) return;
@@ -67,6 +68,7 @@ export class Scene {
     Matter.Events.off(this.engine);
     Matter.World.clear(this.world, false);
     Matter.Engine.clear(this.engine);
+    this.resetLocalState();
     this.initialized = false;
     this._ensureInitialized();
   }

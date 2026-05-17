@@ -2,7 +2,6 @@ import { SceneManager } from "./engine/SceneManager.js";
 import { unlock } from "./engine/audio.js";
 import { TitleDrop } from "./scenes/TitleDrop.js";
 import { PendulumOrchestra } from "./scenes/PendulumOrchestra.js";
-import { MagneticField } from "./scenes/MagneticField.js";
 import { Slingshot } from "./scenes/Slingshot.js";
 import { RubeGoldberg } from "./scenes/RubeGoldberg.js";
 import { startLoader } from "./ui/Loader.js";
@@ -14,7 +13,6 @@ function bootScenes() {
   const sections = {
     title: document.querySelector('[data-scene="title"]'),
     pendulum: document.querySelector('[data-scene="pendulum"]'),
-    magnet: document.querySelector('[data-scene="magnet"]'),
     slingshot: document.querySelector('[data-scene="slingshot"]'),
     goldberg: document.querySelector('[data-scene="goldberg"]'),
   };
@@ -22,7 +20,6 @@ function bootScenes() {
   const scenes = [
     { id: "title", scene: new TitleDrop(sections.title) },
     { id: "pendulum", scene: new PendulumOrchestra(sections.pendulum) },
-    { id: "magnet", scene: new MagneticField(sections.magnet) },
     { id: "slingshot", scene: new Slingshot(sections.slingshot) },
     { id: "goldberg", scene: new RubeGoldberg(sections.goldberg) },
   ];

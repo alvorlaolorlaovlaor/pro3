@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#F4EFE6" />
     <title>Playground — an interactive physics toy box</title>
-    <meta name="description" content="A scrollable physics playground. Drop letters, pluck pendulums, bend magnetic fields, fire slingshots, watch chain reactions." />
+    <meta name="description" content="A scrollable physics playground. Drop letters, pluck pendulums, fire slingshots, watch chain reactions." />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -53,30 +53,20 @@
         <button class="scene__reset" data-reset>reset</button>
       </section>
 
-      <section class="scene" data-scene="magnet" data-scene-number="03">
+      <section class="scene" data-scene="slingshot" data-scene-number="03">
         <canvas class="scene__canvas" data-canvas></canvas>
         <div class="scene__overlay">
-          <p class="scene__kicker">03 — click to flip polarity</p>
-          <h2 class="scene__title">magnet</h2>
-          <p class="scene__caption">opposites attract. mostly.</p>
-        </div>
-        <button class="scene__reset" data-reset>reset</button>
-      </section>
-
-      <section class="scene" data-scene="slingshot" data-scene-number="04">
-        <canvas class="scene__canvas" data-canvas></canvas>
-        <div class="scene__overlay">
-          <p class="scene__kicker">04 — pull back, let go</p>
+          <p class="scene__kicker">03 — pull back, let go</p>
           <h2 class="scene__title">slingshot</h2>
           <p class="scene__caption">aim is optional. catharsis is not.</p>
         </div>
         <button class="scene__reset" data-reset>reset</button>
       </section>
 
-      <section class="scene scene--finale" data-scene="goldberg" data-scene-number="05">
+      <section class="scene scene--finale" data-scene="goldberg" data-scene-number="04">
         <canvas class="scene__canvas" data-canvas></canvas>
         <div class="scene__overlay">
-          <p class="scene__kicker">05 — drop pieces, hit go</p>
+          <p class="scene__kicker">04 — drop pieces, hit go</p>
           <h2 class="scene__title">chain reaction</h2>
           <p class="scene__caption">arrange the dominos. ring the bell.</p>
           <button class="scene__go" data-go>go</button>

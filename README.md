@@ -1,12 +1,11 @@
 # Playground
 
-An interactive physics toy box. Scroll through five scenes:
+An interactive physics toy box. Scroll through four scenes:
 
 1. **Title Drop** — letters rain down. Drag, throw, stack.
 2. **Orchestra** — a row of pendulums. Pluck them; longer ropes ring lower notes.
-3. **Magnet** — a swarm of particles follows your cursor. Click to flip polarity.
-4. **Slingshot** — pull back the band, let go, knock the tower down.
-5. **Chain Reaction** — place pieces, hit **go**, ring the bell.
+3. **Slingshot** — pull back the band, let go, knock the tower down.
+4. **Chain Reaction** — place pieces, hit **go**, ring the bell.
 
 Konami code (↑ ↑ ↓ ↓ ← → ← → B A) inverts gravity for 5 seconds.
 
@@ -48,7 +47,6 @@ src/
 ├── scenes/
 │   ├── TitleDrop.js
 │   ├── PendulumOrchestra.js
-│   ├── MagneticField.js
 │   ├── Slingshot.js
 │   └── RubeGoldberg.js
 └── ui/

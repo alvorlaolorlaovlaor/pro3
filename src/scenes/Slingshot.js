@@ -15,6 +15,15 @@ export class Slingshot extends Scene {
     this.mouseBits = null;
   }
 
+  resetLocalState() {
+    this.projectile = null;
+    this.band = null;
+    this.blocks = [];
+    this.mouseBits = null;
+    this._releasing = false;
+    this._releaseAt = 0;
+  }
+
   setup() {
     const { w, h } = this.renderer;
     this.engine.gravity.y = 1;
@@ -43,10 +52,10 @@ export class Slingshot extends Scene {
     // actual snap happens in afterUpdate once the ball has crossed the anchor —
     // that's how classic Matter slingshot demos avoid the band cutting force
     // off too early.
-    this._releasing = false;
     Matter.Events.on(constraint, "enddrag", (e) => {
       if (e.body === this.projectile) {
         this._releasing = true;
+        this._releaseAt = performance.now();
         playWhoosh();
       }
     });
@@ -66,7 +75,9 @@ export class Slingshot extends Scene {
     Matter.Events.on(this.engine, "afterUpdate", () => {
       if (this.projectile && this.band && this._releasing) {
         const p = this.projectile;
-        if (p.position.x > this.anchor.x + 40 || p.position.y < this.anchor.y - 40) {
+        const passedAnchor = p.position.x > this.anchor.x + 30;
+        const timedOut = performance.now() - this._releaseAt > 260;
+        if (passedAnchor || timedOut) {
           Matter.World.remove(this.world, this.band);
           this.band = null;
           this._releasing = false;
@@ -74,12 +85,9 @@ export class Slingshot extends Scene {
       }
       if (!this.projectile || this.band) return;
       const p = this.projectile;
-      if (
-        p.position.y > h + 200 ||
-        p.position.x > w + 200 ||
-        p.position.x < -200 ||
-        (Math.abs(p.velocity.x) < 0.3 && Math.abs(p.velocity.y) < 0.3 && p.position.x > w * 0.3)
-      ) {
+      const offscreen = p.position.y > h + 200 || p.position.x > w + 200 || p.position.x < -200;
+      const atRest = Math.abs(p.velocity.x) < 0.25 && Math.abs(p.velocity.y) < 0.25;
+      if (offscreen || atRest) {
         Matter.World.remove(this.world, p);
         this.projectile = null;
         setTimeout(() => this._spawnProjectile(), 350);
@@ -99,7 +107,8 @@ export class Slingshot extends Scene {
     this.band = Matter.Constraint.create({
       pointA: this.anchor,
       bodyB: ball,
-      stiffness: 0.05,
+      length: 0,
+      stiffness: 0.08,
       damping: 0.001,
       render: { visible: false },
     });
@@ -133,10 +142,9 @@ export class Slingshot extends Scene {
   onResize() {
     Matter.Events.off(this.engine);
     Matter.World.clear(this.world, false);
-    this.blocks = [];
-    this.projectile = null;
-    this.band = null;
-    this.setup();
+    this.resetLocalState();
+    this.initialized = false;
+    this._ensureInitialized();
   }
 
   draw() {
