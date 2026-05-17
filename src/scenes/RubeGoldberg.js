@@ -39,7 +39,7 @@ export class RubeGoldberg extends Scene {
 
   setup() {
     const { w, h } = this.renderer;
-    this.engine.gravity.y = 1;
+    this.engine.gravity.y = 1.6;
     this._setGoButton(false);
 
     const groundY = h - 50;
@@ -58,9 +58,9 @@ export class RubeGoldberg extends Scene {
     // ── Starting shelf ──────────────────────────────────────────────
     // A tilted beam, slightly slanted down-right so the ball rolls
     // once the lip is gone.
-    const shelfLeft = { x: w * 0.04, y: h * 0.16 };
-    const shelfRight = { x: w * 0.32, y: h * 0.22 };
-    const shelf = this._beam(shelfLeft, shelfRight, 10, { friction: 0.04 });
+    const shelfLeft = { x: w * 0.04, y: h * 0.14 };
+    const shelfRight = { x: w * 0.30, y: h * 0.20 };
+    const shelf = this._beam(shelfLeft, shelfRight, 10, { friction: 0.03 });
     shelf._color = palette.ink;
     this._addStatic(shelf);
 
@@ -73,22 +73,56 @@ export class RubeGoldberg extends Scene {
     Matter.World.add(this.world, this.lip);
     this.statics.push(this.lip);
 
-    // ── Ramp ────────────────────────────────────────────────────────
-    // Long diagonal connecting the shelf's lower-right area to the
-    // ground a bit before the dominoes.
-    const rampTop = { x: w * 0.20, y: h * 0.34 };
-    const rampBottom = { x: w * 0.42, y: groundY - 4 };
-    const ramp = this._beam(rampTop, rampBottom, 10, { friction: 0.02 });
-    ramp._color = palette.ink;
-    this._addStatic(ramp);
+    // ── Zig-zag ramps ──────────────────────────────────────────────
+    // Three slopes alternating direction so the ball weaves down the
+    // viewport instead of sliding a single boring diagonal. Each ramp
+    // is intentionally long and overlaps the next in x so the ball
+    // always lands on the following beam regardless of exit velocity.
+    //
+    //   shelf ─┐
+    //           \\______  ramp A (down-right, ends far right)
+    //                  ╲
+    //          ________╱  ramp B (down-left, starts far right)
+    //         ╱
+    //   ____╱             ramp C (down-right) ─→ dominoes ─→ bell
+    const rampA = [
+      { x: w * 0.16, y: h * 0.28 },
+      { x: w * 0.82, y: h * 0.42 },
+    ];
+    const rampB = [
+      { x: w * 0.92, y: h * 0.50 },
+      { x: w * 0.10, y: h * 0.66 },
+    ];
+    const rampC = [
+      { x: -w * 0.04, y: h * 0.74 },
+      { x: w * 0.44, y: groundY - 4 },
+    ];
+    for (const [a, b] of [rampA, rampB, rampC]) {
+      const beam = this._beam(a, b, 10, { friction: 0.015 });
+      beam._color = palette.ink;
+      this._addStatic(beam);
+    }
+
+    // Decorative pegs along the zig-zag — pure visual flair, placed
+    // so they sit clear of the ball's actual path.
+    const peg = (x, y, color) => {
+      const p = Matter.Bodies.circle(x, y, 5, { ...wallOpts });
+      p._color = color;
+      this._addStatic(p);
+    };
+    peg(w * 0.45, h * 0.55, palette.cool);
+    peg(w * 0.55, h * 0.72, palette.sun);
+    peg(w * 0.30, h * 0.45, palette.warm);
 
     // ── Dominoes ────────────────────────────────────────────────────
-    const domCount = 9;
+    // Fixed-spacing layout so the cascade reliably propagates regardless
+    // of viewport width — spacing must stay below domino height (60).
     const domH = 60;
     const domW = 10;
-    const firstX = w * 0.50;
-    const lastX = w * 0.86;
-    const spacing = (lastX - firstX) / (domCount - 1);
+    const spacing = 45;
+    const firstX = w * 0.48;
+    const desiredLastX = w * 0.86;
+    const domCount = Math.max(5, Math.floor((desiredLastX - firstX) / spacing) + 1);
     for (let i = 0; i < domCount; i++) {
       const x = firstX + i * spacing;
       const dom = Matter.Bodies.rectangle(x, groundY - domH / 2, domW, domH, {
@@ -104,7 +138,8 @@ export class RubeGoldberg extends Scene {
     Matter.World.add(this.world, this.dominos);
 
     // ── Bell ────────────────────────────────────────────────────────
-    const bellX = w * 0.93;
+    const lastDomX = firstX + (domCount - 1) * spacing;
+    const bellX = Math.min(w - 50, lastDomX + 70);
     const bellY = groundY - 28;
     this.bell = Matter.Bodies.circle(bellX, bellY, 28, {
       isStatic: true,
